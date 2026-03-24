@@ -587,7 +587,8 @@ button {
 
 #machineKpiList,
 #topFailuresList,
-#serviceReminderList {
+#serviceReminderList,
+#alertCenterList {
   display: grid;
   gap: 12px;
 }

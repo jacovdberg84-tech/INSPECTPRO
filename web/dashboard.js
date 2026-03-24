@@ -9,6 +9,7 @@ let latestWeeklyTrend = [];
 let latestTopFailures = [];
 let latestDataQuality = { summary: null, anomalies: [] };
 let latestOperations = { totals: null, product_client_breakdown: [] };
+let latestAlertCenter = { summary: null, reliability: null, alerts: [] };
 let filterInputDebounceId = null;
 
 async function applyCompanyBranding() {
@@ -336,7 +337,6 @@ function renderOperationsSummary() {
     <div class="history-card">
       <strong>Product -> Client Breakdown</strong>
       <div class="ops-grid-head">
-        <span>Product</span>
         <span>Product - Client</span>
         <span>Loads</span>
         <span>Amount</span>
@@ -350,6 +350,75 @@ function renderOperationsSummary() {
       `).join("")}
     </div>
   `;
+}
+
+function renderAlertCenter() {
+  const summaryEl = document.getElementById("alertCenterSummary");
+  const listEl = document.getElementById("alertCenterList");
+  if (!summaryEl || !listEl) return;
+
+  const summary = latestAlertCenter.summary;
+  const reliability = latestAlertCenter.reliability;
+  const alerts = Array.isArray(latestAlertCenter.alerts) ? latestAlertCenter.alerts : [];
+
+  if (!summary) {
+    summaryEl.innerHTML = `<div class="history-empty">Loading alert center...</div>`;
+    listEl.innerHTML = "";
+    return;
+  }
+
+  const mtbfText = reliability?.available && reliability.mtbf_hours !== null
+    ? `${Number(reliability.mtbf_hours).toFixed(2)} h`
+    : "--";
+  const mttrText = reliability?.available && reliability.mttr_hours !== null
+    ? `${Number(reliability.mttr_hours).toFixed(2)} h`
+    : "--";
+
+  summaryEl.innerHTML = `
+    <div class="summary-card critical">
+      <div class="summary-label">Critical Alerts</div>
+      <div class="summary-value">${Number(summary.critical_total || 0)}</div>
+    </div>
+    <div class="summary-card risk">
+      <div class="summary-label">High Alerts</div>
+      <div class="summary-value">${Number(summary.high_total || 0)}</div>
+    </div>
+    <div class="summary-card soon">
+      <div class="summary-label">Overdue Services</div>
+      <div class="summary-value">${Number(summary.overdue_services || 0)}</div>
+    </div>
+    <div class="summary-card risk">
+      <div class="summary-label">Repeated Failures</div>
+      <div class="summary-value">${Number(summary.repeated_component_failures || 0)}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Fleet MTBF</div>
+      <div class="summary-value">${mtbfText}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Fleet MTTR</div>
+      <div class="summary-value">${mttrText}</div>
+    </div>
+  `;
+
+  if (!alerts.length) {
+    listEl.innerHTML = `<div class="history-empty">No critical alerts for selected date.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = alerts.map((a) => {
+    const levelClass = a.severity === "critical" ? "critical" : "risk";
+    return `
+      <div class="history-card manager-card ${levelClass}">
+        <div class="manager-card-top">
+          <strong>${escapeHtml(a.asset_code || "Unknown")}</strong> - ${escapeHtml(a.asset_name || "")}
+          <span class="manager-chip ${levelClass}">${escapeHtml(String(a.severity || "high").toUpperCase())}</span>
+        </div>
+        <div class="history-line"><strong>${escapeHtml(a.type || "ALERT")}:</strong> ${escapeHtml(a.title || "")}</div>
+        <div class="history-line">${escapeHtml(a.detail || "")}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 function renderKpiFromCache() {
@@ -580,6 +649,36 @@ async function loadOperationsSummary() {
   }
 }
 
+async function loadAlertCenter() {
+  const summaryEl = document.getElementById("alertCenterSummary");
+  const listEl = document.getElementById("alertCenterList");
+  const dateEl = document.getElementById("date");
+  if (!summaryEl || !listEl || !dateEl) return;
+
+  summaryEl.innerHTML = `<div class="history-empty">Loading alert center...</div>`;
+  listEl.innerHTML = "";
+  const date = dateEl.value || getToday();
+
+  try {
+    const res = await fetch(`${API}/dashboard/alerts/center?date=${encodeURIComponent(date)}`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to load alert center");
+    }
+
+    latestAlertCenter = {
+      summary: data.summary || null,
+      reliability: data.reliability || null,
+      alerts: Array.isArray(data.alerts) ? data.alerts : []
+    };
+    renderAlertCenter();
+  } catch (err) {
+    console.error(err);
+    summaryEl.innerHTML = `<div class="history-empty">Alert center unavailable: ${escapeHtml(err.message)}</div>`;
+    listEl.innerHTML = "";
+  }
+}
+
 function renderWeeklyTrendChart(trend) {
   const chartEl = document.getElementById("weeklyTrendChart");
   if (!chartEl) return;
@@ -704,7 +803,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dateEl.value = getToday();
   const refreshAll = async () => {
-    await Promise.all([loadKPI(), loadServiceReminders(), loadWeeklyTrend(), loadDataQuality(), loadOperationsSummary()]);
+    await Promise.all([loadKPI(), loadServiceReminders(), loadWeeklyTrend(), loadDataQuality(), loadOperationsSummary(), loadAlertCenter()]);
   };
 
   dateEl.addEventListener("change", refreshAll);

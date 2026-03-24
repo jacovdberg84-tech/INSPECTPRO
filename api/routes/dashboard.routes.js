@@ -42,6 +42,23 @@ function parseDateOnly(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function hasTable(name) {
+  const row = db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM sqlite_master
+    WHERE type = 'table' AND name = ?
+  `).get(name);
+  return Number(row?.c || 0) > 0;
+}
+
+function getTableColumns(name) {
+  try {
+    return db.prepare(`PRAGMA table_info(${name})`).all().map((r) => String(r.name || ""));
+  } catch {
+    return [];
+  }
+}
+
 /* =========================
    DAILY KPI SUMMARY
 ========================= */
@@ -562,6 +579,170 @@ router.get("/service/reminders", (req, res) => {
     res.json({ reminders });
   } catch (err) {
     console.error("Service reminders error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* =========================
+   ALERT CENTER (CRITICAL TODAY)
+========================= */
+router.get("/alerts/center", (req, res) => {
+  try {
+    const date = String(req.query.date || "").trim();
+    if (!date) {
+      return res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
+    }
+
+    const planCols = getTableColumns("maintenance_plans");
+    const hasActive = planCols.includes("active");
+    const hasArchived = planCols.includes("archived");
+    const whereParts = [];
+    if (hasActive) whereParts.push("COALESCE(mp.active, 1) = 1");
+    if (hasArchived) whereParts.push("COALESCE(mp.archived, 0) = 0");
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+
+    const remindersRes = db.prepare(`
+      SELECT
+        mp.*,
+        a.asset_code,
+        a.asset_name,
+        ah.total_hours AS current_hours
+      FROM maintenance_plans mp
+      LEFT JOIN assets a ON a.id = mp.asset_id
+      LEFT JOIN asset_hours ah ON ah.asset_id = mp.asset_id
+      ${whereClause}
+    `).all();
+
+    const overdueServices = remindersRes.map((row) => {
+      const intervalHours = toNumber(pickField(row, [
+        "interval_hours",
+        "service_interval_hours",
+        "interval",
+        "frequency_hours",
+        "due_every_hours"
+      ], 0));
+      const currentHours = toNumber(pickField(row, ["current_hours"], 0));
+      const lastServiceHours = toNumber(pickField(row, [
+        "last_service_hours",
+        "last_done_hours",
+        "completed_at_hours",
+        "baseline_hours",
+        "start_hours"
+      ], 0));
+      let dueAtHours = pickField(row, [
+        "next_due_hours",
+        "due_at_hours",
+        "service_due_hours",
+        "target_hours"
+      ], null);
+      dueAtHours = dueAtHours === null ? null : toNumber(dueAtHours, 0);
+      if (dueAtHours === null && intervalHours > 0) {
+        dueAtHours = lastServiceHours > 0 ? (lastServiceHours + intervalHours) : intervalHours;
+      }
+      if (dueAtHours === null) return null;
+      const remaining = Number((dueAtHours - currentHours).toFixed(1));
+      const meta = getReminderStatus(remaining, intervalHours);
+      if (!["OVERDUE", "CRITICAL OVERDUE"].includes(meta.status)) return null;
+      return {
+        type: "OVERDUE_SERVICE",
+        severity: meta.status === "CRITICAL OVERDUE" ? "critical" : "high",
+        asset_id: row.asset_id ?? null,
+        asset_code: row.asset_code || "Unknown",
+        asset_name: row.asset_name || "Unknown Asset",
+        title: pickField(row, ["service_name", "plan_name", "maintenance_type", "name"], "Planned Service"),
+        detail: `Remaining ${remaining.toFixed(1)}h (due at ${Number(dueAtHours).toFixed(1)}h, current ${currentHours.toFixed(1)}h).`
+      };
+    }).filter(Boolean);
+
+    const repeatedFailures = db.prepare(`
+      SELECT
+        b.asset_id,
+        a.asset_code,
+        a.asset_name,
+        COALESCE(NULLIF(TRIM(b.component), ''), 'Unknown Component') AS component,
+        COUNT(*) AS failures
+      FROM breakdowns b
+      LEFT JOIN assets a ON a.id = b.asset_id
+      WHERE b.breakdown_date = ?
+      GROUP BY b.asset_id, component
+      HAVING COUNT(*) >= 2
+      ORDER BY failures DESC, a.asset_code
+      LIMIT 50
+    `).all(date).map((row) => ({
+      type: "REPEATED_COMPONENT_FAILURE",
+      severity: Number(row.failures || 0) >= 3 ? "critical" : "high",
+      asset_id: row.asset_id ?? null,
+      asset_code: row.asset_code || "Unknown",
+      asset_name: row.asset_name || "Unknown Asset",
+      title: row.component,
+      detail: `${Number(row.failures || 0)} failures logged today on same component.`
+    }));
+
+    // Flexible MTBF/MTTR lookup from common reliability table patterns.
+    let reliability = {
+      available: false,
+      source_table: null,
+      mtbf_hours: null,
+      mttr_hours: null
+    };
+    const reliabilityTables = ["asset_reliability_daily", "reliability_daily", "asset_reliability", "reliability_metrics"];
+    for (const tbl of reliabilityTables) {
+      if (!hasTable(tbl)) continue;
+      const cols = getTableColumns(tbl);
+      const mtbfCol = cols.includes("mtbf_hours") ? "mtbf_hours" : (cols.includes("mtbf") ? "mtbf" : null);
+      const mttrCol = cols.includes("mttr_hours") ? "mttr_hours" : (cols.includes("mttr") ? "mttr" : null);
+      if (!mtbfCol || !mttrCol) continue;
+      const dateCol = cols.includes("work_date") ? "work_date" : (cols.includes("metric_date") ? "metric_date" : (cols.includes("date") ? "date" : null));
+
+      let row = null;
+      if (dateCol) {
+        row = db.prepare(`
+          SELECT
+            AVG(${mtbfCol}) AS mtbf_avg,
+            AVG(${mttrCol}) AS mttr_avg
+          FROM ${tbl}
+          WHERE ${dateCol} = ?
+        `).get(date);
+      } else {
+        row = db.prepare(`
+          SELECT
+            AVG(${mtbfCol}) AS mtbf_avg,
+            AVG(${mttrCol}) AS mttr_avg
+          FROM ${tbl}
+        `).get();
+      }
+
+      reliability = {
+        available: row && (row.mtbf_avg !== null || row.mttr_avg !== null),
+        source_table: tbl,
+        mtbf_hours: row?.mtbf_avg === null || row?.mtbf_avg === undefined ? null : Number(Number(row.mtbf_avg).toFixed(2)),
+        mttr_hours: row?.mttr_avg === null || row?.mttr_avg === undefined ? null : Number(Number(row.mttr_avg).toFixed(2))
+      };
+      break;
+    }
+
+    const alerts = [...overdueServices, ...repeatedFailures]
+      .sort((a, b) => {
+        const rank = { critical: 1, high: 2, medium: 3, low: 4 };
+        const ra = rank[a.severity] || 9;
+        const rb = rank[b.severity] || 9;
+        if (ra !== rb) return ra - rb;
+        return String(a.asset_code || "").localeCompare(String(b.asset_code || ""));
+      });
+
+    return res.json({
+      date,
+      summary: {
+        critical_total: alerts.filter((a) => a.severity === "critical").length,
+        high_total: alerts.filter((a) => a.severity === "high").length,
+        overdue_services: overdueServices.length,
+        repeated_component_failures: repeatedFailures.length
+      },
+      reliability,
+      alerts
+    });
+  } catch (err) {
+    console.error("Alert center error:", err);
     res.status(500).json({ error: err.message });
   }
 });
