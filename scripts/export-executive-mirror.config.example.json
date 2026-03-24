@@ -1,0 +1,10 @@
+{
+  "api_base": "http://localhost:3002/api/dashboard",
+  "blob_container": "mirror-inbound",
+  "spool_dir": "C:/INSPECTPRO/cloud/spool",
+  "archive_dir": "C:/INSPECTPRO/cloud/archive",
+  "lookback_days": 7,
+  "azure_storage_account": "inspectproprodst",
+  "azure_storage_key": "",
+  "upload_mode": "az-cli"
+}
