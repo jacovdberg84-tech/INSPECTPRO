@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InspectPro Artisan</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>InspectPro Artisan</h1>
+        <p class="subtitle">Maintenance field app</p>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button id="artisanTabBtnInspection" class="tab-btn active" type="button" data-tab="inspection">Daily Inspection</button>
+      <button id="artisanTabBtnMaintenance" class="tab-btn" type="button" data-tab="maintenance">Maintenance</button>
+      <button id="artisanTabBtnWorkOrders" class="tab-btn" type="button" data-tab="workorders">Work Orders</button>
+    </nav>
+
+    <div id="artisanMessageBox" class="message-box" style="display:none;"></div>
+
+    <!-- DAILY INSPECTION -->
+    <section id="artisan-tab-inspection" class="tab-panel active">
+      <div class="card">
+        <div class="grid-2">
+          <div>
+            <label for="artisanName">Artisan Name</label>
+            <input id="artisanName" placeholder="Enter artisan name" />
+          </div>
+
+          <div>
+            <label for="artisanDate">Date</label>
+            <input id="artisanDate" readonly />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label for="artisanSignature">Signature</label>
+            <input id="artisanSignature" placeholder="Type name as signature" />
+          </div>
+
+          <div class="inline-end">
+            <button id="artisanLoadMachines" type="button" class="secondary-btn">Load Machines</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-header">
+          <h2>Select Machine</h2>
+        </div>
+        <div id="artisanAssets" class="machine-grid"></div>
+        <div id="artisanAssetsError" class="error" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <div class="grid-2">
+          <div class="stat-box">
+            <div class="stat-label">Current IRONLOG Hours</div>
+            <div class="stat-value" id="artisanCurrentHours">0.0</div>
+          </div>
+
+          <div>
+            <label for="artisanHourMeter">Hour Meter Reading</label>
+            <input id="artisanHourMeter" type="number" step="0.1" min="0" placeholder="e.g. 12543.6" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Daily Artisan Inspection</h2>
+
+        <div class="check-section">
+          <div class="section-title">Mechanical</div>
+
+          <div class="check-item" data-key="engine">
+            <div class="check-label">Engine</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="engine" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="engine" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="engine" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="hydraulics">
+            <div class="check-label">Hydraulics</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="hydraulics" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="hydraulics" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="hydraulics" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="leaks">
+            <div class="check-label">Leaks</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="leaks" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="leaks" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="leaks" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="check-section">
+          <div class="section-title">Safety / Electrical</div>
+
+          <div class="check-item" data-key="lights">
+            <div class="check-label">Lights</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="lights" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="lights" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="lights" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="brakes">
+            <div class="check-label">Brakes</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="brakes" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="brakes" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="brakes" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="safety_equipment">
+            <div class="check-label">Safety Equipment</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="safety_equipment" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="safety_equipment" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="safety_equipment" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="check-section">
+          <div class="section-title">General</div>
+
+          <div class="check-item" data-key="tyres">
+            <div class="check-label">Tyres</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="tyres" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="tyres" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="tyres" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="fluids">
+            <div class="check-label">Fluids</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="fluids" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="fluids" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="fluids" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div class="check-item" data-key="other">
+            <div class="check-label">Other</div>
+            <div class="check-actions">
+              <button type="button" class="artisan-status-btn active ok" data-key="other" data-value="ok">OK</button>
+              <button type="button" class="artisan-status-btn attention" data-key="other" data-value="attention">Attention</button>
+              <button type="button" class="artisan-status-btn unsafe" data-key="other" data-value="unsafe">Unsafe</button>
+            </div>
+          </div>
+
+          <div id="artisanOtherCommentWrap" style="display:none; margin-top:12px;">
+            <label for="artisanOtherComment">Other Comment</label>
+            <textarea id="artisanOtherComment" placeholder="Describe other issue..."></textarea>
+          </div>
+        </div>
+
+        <div class="grid-2 top-gap">
+          <div>
+            <label for="artisanLubeType">Lube / Oil Type</label>
+            <input id="artisanLubeType" placeholder="e.g. 15W40" />
+          </div>
+
+          <div>
+            <label for="artisanLubeQty">Lube Quantity</label>
+            <input id="artisanLubeQty" type="number" step="0.1" min="0" placeholder="e.g. 2.5" />
+          </div>
+        </div>
+
+        <label for="artisanNotes">Notes</label>
+        <textarea id="artisanNotes" placeholder="Inspection notes..."></textarea>
+
+        <button id="artisanSubmitInspectionBtn" type="button" class="primary-btn">Submit Artisan Inspection</button>
+      </div>
+    </section>
+
+    <!-- MAINTENANCE -->
+    <section id="artisan-tab-maintenance" class="tab-panel">
+  <div class="card">
+    <h2>Maintenance Entry</h2>
+
+    <label>Maintenance Type</label>
+    <select id="maintType">
+      <option>Service</option>
+      <option>Repair</option>
+      <option>Inspection</option>
+      <option>GET Change</option>
+      <option>Tyre Change</option>
+      <option>Component Change</option>
+    </select>
+
+    <label>Service Type</label>
+    <input id="maintServiceType" placeholder="e.g. 250h service" />
+
+    <label>Hour Meter</label>
+    <input id="maintHours" type="number" step="0.1" />
+
+    <div class="section-header top-gap">
+      <h2>Lubricants / Oils</h2>
+      <button id="addLubeRowBtn" type="button" class="secondary-btn">Add Oil/Lube</button>
+    </div>
+    <div id="maintLubesWrap">
+      <div class="multi-row maint-lube-row">
+        <input class="maintLubeType" placeholder="Lube type e.g. 15W40" />
+        <input class="maintLubeQty" type="number" step="0.1" min="0" placeholder="Qty" />
+        <button type="button" class="secondary-btn remove-row-btn">Remove</button>
+      </div>
+    </div>
+
+    <div class="section-header top-gap">
+      <h2>Parts Used</h2>
+      <button id="addPartRowBtn" type="button" class="secondary-btn">Add Part</button>
+    </div>
+    <div id="maintPartsWrap">
+      <div class="multi-row maint-part-row">
+        <input class="maintPartName" placeholder="Part name" />
+        <input class="maintPartQty" type="number" step="1" min="0" placeholder="Qty" />
+        <button type="button" class="secondary-btn remove-row-btn">Remove</button>
+      </div>
+    </div>
+
+    <label class="top-gap">Change Description</label>
+    <input id="maintChangeDesc" placeholder="e.g. Bucket teeth" />
+    <input id="maintChangeQty" type="number" step="1" placeholder="Qty" />
+
+    <label>Notes</label>
+    <textarea id="maintNotes"></textarea>
+
+    <button id="submitMaintenance" class="primary-btn" type="button">Submit Maintenance</button>
+  </div>
+</section>
+
+    <!-- WORK ORDERS -->
+    <section id="artisan-tab-workorders" class="tab-panel">
+      <div class="card">
+        <div class="section-header">
+          <h2>Open Work Orders</h2>
+          <button id="reloadWorkOrdersBtn" type="button" class="secondary-btn">Refresh</button>
+        </div>
+
+        <div id="artisanWorkOrdersList" class="history-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Selected Work Order</h2>
+        <div id="selectedWorkOrderCard" class="selected-machine-card empty">
+          <div class="selected-machine-title">No work order selected</div>
+          <div class="selected-machine-sub">Select an open work order first.</div>
+        </div>
+
+       <label for="woWorkDoneNotes">Work Done Notes</label>
+<textarea id="woWorkDoneNotes" placeholder="Describe repair work completed..."></textarea>
+
+<label for="woBeforePhotos">Before Photos</label>
+<input id="woBeforePhotos" type="file" accept="image/*" multiple />
+
+<label for="woAfterPhotos">After Photos</label>
+<input id="woAfterPhotos" type="file" accept="image/*" multiple />
+
+<button id="completeWorkOrderBtn" type="button" class="primary-btn">Mark Completed by Artisan</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="artisan.js"></script>
+</body>
+</html>

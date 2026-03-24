@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InspectPro Supervisor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>InspectPro Supervisor</h1>
+        <p class="subtitle">Approval and closure control</p>
+      </div>
+    </header>
+
+    <div id="supervisorMessageBox" class="message-box" style="display:none;"></div>
+
+    <div class="card">
+      <div class="grid-2">
+        <div>
+          <label for="supervisorName">Supervisor Name</label>
+          <input id="supervisorName" placeholder="Enter supervisor name" />
+        </div>
+        <div class="inline-end">
+          <button id="reloadApprovalsBtn" type="button" class="secondary-btn">Refresh Approvals</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <h2>Awaiting Approval</h2>
+      </div>
+      <div id="supervisorApprovalsList" class="history-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Selected Work Order</h2>
+      <div id="selectedApprovalCard" class="selected-machine-card empty">
+        <div class="selected-machine-title">No work order selected</div>
+        <div class="selected-machine-sub">Select a completed work order first.</div>
+      </div>
+
+      <label for="supervisorNotes">Supervisor Notes</label>
+      <textarea id="supervisorNotes" placeholder="Approval or rejection notes..."></textarea>
+
+      <div class="grid-2 top-gap">
+        <button id="approveWorkOrderBtn" type="button" class="primary-btn">Approve & Close</button>
+        <button id="rejectWorkOrderBtn" type="button" class="danger-btn">Reject & Return</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="supervisor.js"></script>
+</body>
+</html>

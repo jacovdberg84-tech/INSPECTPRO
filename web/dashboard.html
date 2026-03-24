@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InspectPro Dashboard</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div id="companyBrandCard" class="company-brand-card" style="display:none;">
+      <img id="companyBrandLogo" class="company-brand-logo" alt="Company logo" />
+      <div class="company-brand-text">
+        <div id="companyBrandName" class="company-brand-name"></div>
+        <div id="companyBrandMeta" class="company-brand-meta"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label>Date
+        <input id="date" type="date" />
+      </label>
+      <button id="refreshBtn" type="button" class="secondary-btn">Refresh</button>
+      <button type="button" class="secondary-btn" onclick="location.href='ops.html'">Morning Ops Check</button>
+      <button id="exportKpiBtn" type="button" class="secondary-btn">Export KPI CSV</button>
+      <button id="exportRemindersBtn" type="button" class="secondary-btn">Export Service CSV</button>
+      <div class="refresh-meta">
+        <div id="lastUpdated" class="refresh-line">Last updated: --</div>
+        <div id="nextRefresh" class="refresh-line">Next refresh in: 60s</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="panel dashboard-title-panel">
+      <h2 class="dashboard-page-title">InspectPro Dashboard</h2>
+      <div class="subtitle">Manager Overview: KPI, Risk, and Service Readiness</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Filters</h2>
+      </div>
+      <div class="filter-grid">
+        <label>Status
+          <select id="statusFilter">
+            <option value="ALL">All</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="RISK">Risk</option>
+            <option value="OK">OK / Healthy</option>
+            <option value="OVERDUE">Overdue Service</option>
+          </select>
+        </label>
+        <label>Asset Search
+          <input id="assetSearch" type="text" placeholder="Code or name" />
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Executive Summary</h2>
+      </div>
+      <div id="summaryCards" class="summary-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Data Quality Alerts</h2>
+      </div>
+      <div id="dataQualitySummary" class="summary-grid"></div>
+      <div id="dataQualityList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Operations (Daily)</h2>
+      </div>
+      <div id="operationsSummary" class="summary-grid"></div>
+      <div id="operationsBreakdown"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Daily KPI by Machine</h2>
+      </div>
+      <div id="machineKpiList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Top Failures</h2>
+      </div>
+      <div id="topFailuresList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Weekly Trend (Fleet)</h2>
+      </div>
+      <div id="weeklyTrendChart" class="trend-chart"></div>
+      <div id="weeklyTrendList"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Service Reminders</h2>
+      </div>
+      <div id="serviceReminderList"></div>
+    </section>
+  </main>
+
+  <script src="./dashboard.js?v=13"></script>
+</body>
+</html>

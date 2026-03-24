@@ -1,0 +1,11 @@
+.env
+.env.*
+node_modules/
+api/node_modules/
+uploads/
+*.log
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+backups/
