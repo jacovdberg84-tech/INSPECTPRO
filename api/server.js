@@ -11,19 +11,37 @@ import breakdownRoutes from "./routes/breakdowns.routes.js";
 import artisanRoutes from "./routes/artisan.routes.js";
 import maintenanceRoutes from "./routes/maintenance.routes.js";
 import supervisorRoutes from "./routes/supervisor.routes.js";
+import managerRoutes from "./routes/manager.routes.js";
+import prestartRoutes from "./routes/prestart.routes.js";
 
 dotenv.config();
 
 const app = express();
 
-// CORS - restrict in production
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3002'];
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// CORS: browsers send Origin; React Native / native apps often omit it — allow those through.
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ||
+  "http://localhost:3000,http://localhost:3002,https://ironlog.ironlogafrica.com"
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes("*")) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, false);
+    },
+    credentials: true
+  })
+);
 app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
-app.use(express.json());
+// Manager/artisan photo payloads can be large (base64), so raise parser limits.
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 // Request logging
 app.use((req, res, next) => {
@@ -39,6 +57,8 @@ app.use("/api/breakdowns", breakdownRoutes);
 app.use("/api/artisan", artisanRoutes);
 app.use("/api/artisan/maintenance", maintenanceRoutes);
 app.use("/api/supervisor", supervisorRoutes);
+app.use("/api/manager", managerRoutes);
+app.use("/api/prestart", prestartRoutes);
 
 // Health check
 app.get("/health", (req, res) => res.json({ ok: true }));

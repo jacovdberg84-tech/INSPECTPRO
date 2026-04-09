@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "InspectPro Manager",
+    "slug": "inspectpro-manager",
+    "version": "1.0.0",
+    "icon": "./assets/app-icon.png",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "13db15e2-b63d-4926-a024-b1b5488957f0"
+      },
+      "ironlogApiBase": "https://ironlog.ironlogafrica.com/api"
+    },
+    "android": {
+      "package": "com.jakes84.inspectpromanager",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#101010"
+      }
+    }
+  }
+}
