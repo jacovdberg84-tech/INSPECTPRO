@@ -242,7 +242,7 @@ export default function App() {
     setShowAssetResults(false);
     try {
       const data = await fetchAssetHours(assetId);
-      const h = Number(data?.total_hours || 0);
+      const h = Number(data?.current_hours ?? data?.total_hours ?? 0);
       setCurrentHours(h.toFixed(1));
       setHourMeter(h.toFixed(1));
     } catch {
@@ -364,18 +364,17 @@ export default function App() {
           ];
         })
       );
-      const criticalFindings = CHECKLIST_ITEMS
-        .filter((item) => checklist[item.key] === "unsafe" || checklist[item.key] === "attention")
-        .map((item) => {
-          const d = checkDetails[item.key] || { comment: "", photos: [] };
-          const comment = String(d.comment || "").trim() || "(no comment)";
-          const photoCount = Array.isArray(d.photos) ? d.photos.length : 0;
-          return `[${String(checklist[item.key]).toUpperCase()}] ${item.label}: ${comment}${photoCount ? ` (photos: ${photoCount})` : ""}`;
-        });
+      const checklistLines = CHECKLIST_ITEMS.map((item) => {
+        const d = checkDetails[item.key] || { comment: "", photos: [] };
+        const status = checklist[item.key];
+        const comment = String(d.comment || "").trim() || "(no comment)";
+        const photoCount = Array.isArray(d.photos) ? d.photos.length : 0;
+        return `[${String(status).toUpperCase()}] ${item.label}: ${comment}${photoCount ? ` (photos: ${photoCount})` : ""}`;
+      });
       const allPhotoRefs = CHECKLIST_ITEMS.flatMap((item) => checkDetails[item.key]?.photos || []);
       const enrichedNotes = [
         notes.trim(),
-        criticalFindings.length ? `\nCritical Findings:\n${criticalFindings.join("\n")}` : ""
+        checklistLines.length ? `\nChecklist:\n${checklistLines.join("\n")}` : ""
       ]
         .filter(Boolean)
         .join("\n");
